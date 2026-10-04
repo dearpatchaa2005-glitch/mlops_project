@@ -1,0 +1,71 @@
+{
+  "title": "Skin Lesion API - Overview",
+  "uid": "skin-lesion-api-overview",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": {"from": "now-1h", "to": "now"},
+  "panels": [
+    {
+      "id": 1,
+      "title": "Request rate by status",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "targets": [
+        {"expr": "sum by (status) (rate(predict_requests_total[1m]))", "legendFormat": "{{status}}"}
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Error rate (% of requests invalid/error)",
+      "type": "stat",
+      "gridPos": {"h": 8, "w": 6, "x": 12, "y": 0},
+      "targets": [
+        {"expr": "100 * sum(rate(predict_requests_total{status=~\"invalid|error\"}[5m])) / sum(rate(predict_requests_total[5m]))"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "percent", "thresholds": {"steps": [
+        {"color": "green", "value": null}, {"color": "orange", "value": 5}, {"color": "red", "value": 10}
+      ]}}}
+    },
+    {
+      "id": 3,
+      "title": "Latency p50 / p95 (ms)",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 6, "x": 18, "y": 0},
+      "targets": [
+        {"expr": "1000 * histogram_quantile(0.50, rate(predict_latency_seconds_bucket[5m]))", "legendFormat": "p50"},
+        {"expr": "1000 * histogram_quantile(0.95, rate(predict_latency_seconds_bucket[5m]))", "legendFormat": "p95"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "ms"}}
+    },
+    {
+      "id": 4,
+      "title": "Prediction score distribution",
+      "type": "heatmap",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+      "targets": [
+        {"expr": "sum(increase(prediction_score_bucket[5m])) by (le)", "format": "heatmap", "legendFormat": "{{le}}"}
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Data drift: max feature PSI",
+      "type": "gauge",
+      "gridPos": {"h": 8, "w": 6, "x": 12, "y": 8},
+      "targets": [{"expr": "data_drift_max_psi"}],
+      "fieldConfig": {"defaults": {"max": 1, "min": 0, "thresholds": {"steps": [
+        {"color": "green", "value": null}, {"color": "orange", "value": 0.1}, {"color": "red", "value": 0.2}
+      ]}}}
+    },
+    {
+      "id": 6,
+      "title": "Concept drift: pAUC drop vs. reference",
+      "type": "gauge",
+      "gridPos": {"h": 8, "w": 6, "x": 18, "y": 8},
+      "targets": [{"expr": "concept_drift_pauc_drop"}],
+      "fieldConfig": {"defaults": {"max": 0.2, "min": -0.05, "thresholds": {"steps": [
+        {"color": "green", "value": null}, {"color": "orange", "value": 0.015}, {"color": "red", "value": 0.03}
+      ]}}}
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "n_requests": 500,
+  "concurrency": 8,
+  "warmup_requests": 20,
+  "p50_ms": 773.097,
+  "p95_ms": 923.381,
+  "mean_ms": 791.704,
+  "max_ms": 1962.5,
+  "wall_time_s": 49.626,
+  "throughput_rps": 10.08,
+  "scope": "full HTTP round trip through /predict (1 row per request): JSON parsing, pydantic validation, pandera schema check, 5-model predict, JSON response, loopback network."
+}

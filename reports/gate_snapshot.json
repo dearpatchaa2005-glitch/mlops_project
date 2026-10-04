@@ -1,0 +1,41 @@
+{
+  "run_id": "d4fedd44722e403da20c801828aa78ec",
+  "run_name": "lgbm_simple_spw1_no_nevi_final",
+  "git_commit": null,
+  "pauc_mean": 0.1581883029239963,
+  "pauc_std": 0.01083488814399661,
+  "model_latency_p95_ms": 17.265009999482572,
+  "api_latency_p95_ms": 923.381,
+  "api_throughput_rps": 10.08,
+  "model_size_mb": 0.707639,
+  "fairness_gaps": {
+    "sex=female": {
+      "gap": 0.0171,
+      "n_pos": 92
+    },
+    "sex=male": {
+      "gap": -0.0076,
+      "n_pos": 236
+    },
+    "age_group=51-65": {
+      "gap": 0.0047,
+      "n_pos": 173
+    },
+    "age_group=<=50": {
+      "gap": 0.0021,
+      "n_pos": 66
+    },
+    "age_group=>65": {
+      "gap": -0.011,
+      "n_pos": 95
+    },
+    "tbp_tile_type=3D: XP": {
+      "gap": 0.0102,
+      "n_pos": 159
+    },
+    "tbp_tile_type=3D: white": {
+      "gap": -0.0095,
+      "n_pos": 178
+    }
+  }
+}

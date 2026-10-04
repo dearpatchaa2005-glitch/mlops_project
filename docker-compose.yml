@@ -1,0 +1,80 @@
+# Full local stack: serving API + MLflow UI (registry/experiments) +
+# Prometheus (scrapes the API's /metrics) + Alertmanager (gate-threshold
+# alerts) + Grafana (dashboards). `docker compose up` on a clean machine
+# builds the image and wires everything together.
+#
+# Model weights / MLflow store are bind-mounted, not baked into the image
+# (see docker/Dockerfile) -- they must already exist locally (produced by
+# running the training pipeline: src/data -> src/training ->
+# src/evaluation -> src/registry, or via dags/skin_lesion_pipeline.py).
+services:
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./artifacts:/app/artifacts:ro
+      - ./mlruns:/app/mlruns:ro
+      - ./mlflow.db:/app/mlflow.db:ro
+      - ./runtime:/app/runtime
+    environment:
+      - MLFLOW_TRACKING_URI=sqlite:///mlflow.db
+      - MODEL_NAME=skin_lesion_tabular
+    restart: unless-stopped
+
+  mlflow-ui:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    command: >
+      mlflow server --backend-store-uri sqlite:///mlflow.db
+      --default-artifact-root /app/mlruns --host 0.0.0.0 --port 5000
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./mlruns:/app/mlruns
+      - ./mlflow.db:/app/mlflow.db
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request as r; r.urlopen('http://localhost:5000', timeout=2)"]
+      interval: 15s
+      timeout: 3s
+      start_period: 10s
+      retries: 3
+    restart: unless-stopped
+    
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./infra/prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./infra/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.3.1
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+    volumes:
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infra/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+    restart: unless-stopped

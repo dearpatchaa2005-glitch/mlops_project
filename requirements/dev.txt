@@ -1,0 +1,6 @@
+# Dev / CI tooling: linting and tests. Not needed to run the service, only
+# to develop it and to run the CI pipeline (see .github/workflows/ci.yml).
+-r serving.txt
+ruff==0.16.10
+pytest==9.1.1
+httpx==0.28.1

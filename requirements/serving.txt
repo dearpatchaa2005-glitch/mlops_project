@@ -1,0 +1,7 @@
+# Serving API. fastapi/uvicorn versions match what the project's .venv
+# already resolved (per the install log); prometheus_client is new.
+-r base.txt
+fastapi==0.142.2
+uvicorn[standard]==0.54.0
+pydantic==2.13.5
+prometheus_client==0.26.0

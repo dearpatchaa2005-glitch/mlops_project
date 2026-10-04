@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  # 1) Code quality
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: pip install ruff==0.16.10
+      - run: ruff check src/ serving/ dags/ scripts/ tests/
+
+  # 2) Data validity: the schema gate must pass on good data and, just as
+  # importantly, must actually REJECT bad data (not merely "run without
+  # crashing"). Both are asserted so a silently-neutered validator fails CI.
+  data-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: pip install -r requirements/base.txt
+      - name: good fixture must PASS
+        run: python -m src.validation.validate_metadata tests/fixtures/good_metadata_sample.csv
+      - name: bad fixture must FAIL (inverted: this step passing means validation is broken)
+        run: |
+          if python -m src.validation.validate_metadata tests/fixtures/bad_metadata_sample.csv; then
+            echo "::error::validator accepted known-bad data -- this must fail"
+            exit 1
+          fi
+      - run: pip install pytest
+      - run: pytest tests/unit -v
+
+  # 3) Model quality gates: checked against reports/gate_snapshot.json,
+  # which is committed to git (unlike mlflow.db/artifacts/, which are
+  # gitignored and don't exist on this runner). See
+  # src/evaluation/export_gate_snapshot.py for how it's produced, and
+  # docs/experiment_log.md for why check_gates.py itself can't run here.
+  model-gates:
+    runs-on: ubuntu-latest
+    needs: [data-validation]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: pip install pyyaml
+      - run: python -m src.evaluation.check_gates_ci reports/gate_snapshot.json

@@ -1,0 +1,47 @@
+groups:
+  - name: skin_lesion_api
+    rules:
+      # --- system health ---
+      - alert: APIDown
+        expr: up{job="skin_lesion_api"} == 0
+        for: 1m
+        labels: {severity: critical}
+        annotations:
+          summary: "Skin lesion API is down"
+          description: "Prometheus hasn't been able to scrape {{ $labels.instance }} for 1m."
+
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(predict_requests_total{status=~"invalid|error"}[5m]))
+          /
+          sum(rate(predict_requests_total[5m])) > 0.1
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: "More than 10% of /predict requests are failing"
+          description: "Invalid/error rate over the last 5m exceeds 10% of total traffic."
+
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, rate(predict_latency_seconds_bucket[5m])) > 0.150
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: "/predict p95 latency above SLO"
+          description: "p95 over the last 5m exceeds the 150ms SLO in configs/gates.yaml (api_latency_p95_ms_max)."
+
+      # --- prediction-quality monitoring ---
+      - alert: DataDriftDetected
+        expr: data_drift_detected == 1
+        for: 0m
+        labels: {severity: warning}
+        annotations:
+          summary: "Input feature distribution has drifted from training data"
+          description: "max feature PSI = {{ $value }}. Re-run python -m src.monitoring.drift data-drift for details; see retrain policy in docs/experiment_log.md."
+
+      - alert: ConceptDriftSuspected
+        expr: concept_drift_detected == 1
+        for: 0m
+        labels: {severity: critical}
+        annotations:
+          summary: "Model performance has dropped on recently-labeled outcomes"
+          description: "pAUC dropped by {{ $value }} vs. the reference CV pAUC. Treat as a retrain trigger (see retrain policy)."

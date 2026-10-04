@@ -1,0 +1,36 @@
+gates:
+  pauc_mean_min: 0.14        # mean 5-fold CV pAUC (TPR >= 0.80, max 0.20)
+  pauc_std_max: 0.03         # max std across folds
+  pauc_min_vs_single_feature: 0.0442   # best single feature (nevi_confidence)
+  pauc_max_regression: 0.01  # vs. current registry model (checker not yet implemented)
+  latency_p95_ms_max: 50     # model-only (5 LightGBM predicts + averaging), measured 7.6 ms
+  api_latency_p95_ms_max: 1000  # full HTTP round trip (/predict), measured on the team's real
+                                 # dev machine (Windows, Docker Desktop), SINGLE-worker container
+                                 # (the deployed config -- see note below): concurrency=8,
+                                 # p95=958.95ms. Set just above that measured tail.
+  api_throughput_rps_min: 8     # measured 9.76 rps at concurrency=8, single-worker container
+                                 # (the deployed config). Set just below that measured value.
+                                 #
+                                 # We investigated running uvicorn with `--workers 4`: it raised
+                                 # throughput to 28.45 rps (concurrency=8) by sidestepping Python's
+                                 # GIL, which otherwise serializes LightGBM/pandas/pandera's
+                                 # CPU-bound work across "concurrent" requests. We decided NOT to
+                                 # deploy it, on purpose: this project's registry rollback demo
+                                 # relies on POST /reload hot-swapping the in-memory model after
+                                 # `src/registry/promote`, and with multiple worker *processes*
+                                 # each holding its own copy of that state, a single /reload call
+                                 # only updates whichever worker process handled it -- the other
+                                 # workers would keep serving the old model, and /metrics would
+                                 # reflect only one worker's counters. That inconsistency is a
+                                 # correctness risk we're not willing to carry into a live
+                                 # promote/rollback demo. So the deployed container stays
+                                 # single-worker (correct, simple, demo-safe), gates are set to
+                                 # what that configuration actually delivers, and the GIL/
+                                 # --workers 4 finding is written up as an architecture discussion
+                                 # and a documented future improvement (e.g. multi-process-safe
+                                 # /metrics via prometheus_client's multiprocess mode, and a
+                                 # reload broadcast to every worker) rather than a shipped change.
+                                 # See docs/experiment_log.md.
+  fairness_pauc_gap_max: 0.03  # group pAUC vs overall, CV-based
+  fairness_min_malignant_per_group: 50
+  model_size_mb_max: 5

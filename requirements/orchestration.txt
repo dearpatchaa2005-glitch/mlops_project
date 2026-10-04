@@ -1,0 +1,4 @@
+# Pipeline orchestration (dags/skin_lesion_pipeline.py). Not needed to run
+# the API service itself -- only to run the end-to-end DAG.
+-r base.txt
+prefect==3.8.7

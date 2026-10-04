@@ -1,0 +1,15 @@
+# Core data/ML stack. Versions pinned to what is actually installed in the
+# project's .venv (checked via `pip show`) so a fresh install reproduces the
+# same environment the experiment_log.md results were produced with.
+pandas==3.0.6
+numpy==2.5.3
+scikit-learn==1.9.1
+pillow==12.3.0
+lightgbm==4.7.0
+mlflow==3.16.1
+pyyaml==6.0.3
+
+# Data validation (schema + anomaly detection gate). Not in the original
+# venv -- new in this round of work. Pin after first install with:
+#   pip show pandera | findstr Version
+pandera==0.33.1

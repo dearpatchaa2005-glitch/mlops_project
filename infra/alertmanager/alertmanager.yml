@@ -1,0 +1,22 @@
+# Minimal Alertmanager config: routes everything to a logging webhook by
+# default. No real Slack/email/PagerDuty credentials exist for this course
+# project, so the "receiver" here is a stand-in that makes the alert
+# visible (its HTTP response/log line) without pretending to page anyone.
+# Swap `webhook_configs.url` for a real Slack/Teams/email integration to
+# make this production-real; the routing/grouping logic doesn't change.
+route:
+  receiver: default
+  group_by: ["alertname"]
+  group_wait: 10s
+  group_interval: 1m
+  repeat_interval: 1h
+  routes:
+    - matchers: ["severity = critical"]
+      receiver: default
+      repeat_interval: 15m
+
+receivers:
+  - name: default
+    webhook_configs:
+      - url: "http://api:8000/health"  # placeholder sink; replace with a real alert channel
+        send_resolved: true
