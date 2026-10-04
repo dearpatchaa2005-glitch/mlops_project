@@ -29,7 +29,7 @@ jobs:
       - run: pip install -r requirements/base.txt
       - name: good fixture must PASS
         run: python -m src.validation.validate_metadata tests/fixtures/good_metadata_sample.csv
-      - name: bad fixture must FAIL (inverted: this step passing means validation is broken)
+      - name: "bad fixture must FAIL (inverted - this step passing means validation is broken)"
         run: |
           if python -m src.validation.validate_metadata tests/fixtures/bad_metadata_sample.csv; then
             echo "::error::validator accepted known-bad data -- this must fail"
